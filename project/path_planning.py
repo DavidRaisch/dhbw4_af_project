@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.interpolate import interp1d
 
 class PathPlanning:
     def __init__(self):
@@ -42,7 +43,9 @@ class PathPlanning:
         angle = np.arctan2(vector_x, vector_y)  # arctan2(x, y) gibt den Winkel im Bogenmaß zurück
         angle_degrees = np.degrees(angle)  # Umwandlung in Grad
 
-        return angle_degrees
+        # Runden des Winkels auf die nächste ganze Zahl
+        rounded_angle = round(angle_degrees)
 
-# Make sure to include these imports at the beginning of your file
-from scipy.interpolate import interp1d
+        return rounded_angle
+
+
