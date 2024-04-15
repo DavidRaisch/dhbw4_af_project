@@ -33,6 +33,8 @@ def run(env, input_controller: InputController):
             if 0 < point[0] < 96 and 0 < point[1] < 84:
                 cv_image[int(point[1]), int(point[0])] = [0, 0, 255]
 
+        cv2.putText(cv_image, f"{curvature:.2f}", (30, 93), cv2.FONT_ITALIC, 0.4, (255,255, 255),1)
+
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
         cv_image = cv2.resize(cv_image, (cv_image.shape[1] * 6, cv_image.shape[0] * 6))
         cv2.imshow('Car Racing - Path Planning', cv_image)
