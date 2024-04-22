@@ -2,102 +2,58 @@ import numpy as np
 import cv2
 
 class LaneDetection:
-
-    def __init__(self):
-        self.canny_low_threshold = 150
-        self.canny_high_threshold = 450
+    def __init__(self, num_points=7):
+        self.canny_low_threshold = 30
+        self.canny_high_threshold = 90
+        self.gaussian_blur_kernel_size = (5, 5)
         self.ignore_bottom_fraction = 0.32
-
-    def calculate_middle(self, left_start, right_start):
-        return (left_start + right_start) // 2
+        self.num_points = num_points
 
     def detect(self, image: np.ndarray) -> np.ndarray:
-        ignore_height = int(image.shape[0] * self.ignore_bottom_fraction)
-        image[-ignore_height:, :] = 0
+        height = image.shape[0]
+        ignore_height = int(height * self.ignore_bottom_fraction)
+        image = image[:height - ignore_height, :]
 
-        edges = cv2.Canny(image, self.canny_low_threshold, self.canny_high_threshold)
+        s_channel = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        blur = cv2.GaussianBlur(s_channel, self.gaussian_blur_kernel_size, 0)
+        edges = cv2.Canny(blur, self.canny_low_threshold, self.canny_high_threshold)
         self.debug_image = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
-        lane_points = np.argwhere(edges == 255)
-        
-        # Initialize the start points of the left and right lanes
-        left_lane_start = [43, 29]
-        right_lane_start = [5, 28]
 
-        
-        y_value_left = left_lane_start[1]
-        y_value_right = right_lane_start[1]
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if contours:
+            cv2.drawContours(self.debug_image, contours, -1, (0, 255, 0), 2)
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:2]  # Betrachte nur die zwei größten Konturen
+            contours = sorted(contours, key=lambda c: np.mean([p[0][0] for p in c]))  # Sortiere nach horizontaler Position
 
-        # Calculate initial middle point
-        self.middle_point = self.calculate_middle(y_value_left, y_value_right)
-        
+            points = self.collect_contour_points(contours)
 
-        # Schritt 3: Finden der linken und rechten Kantenpunkte
-        left_lane_points = []
-        right_lane_points = []
-
-        for point in lane_points:
-            y_value = point[1]
-            if y_value < self.middle_point:
-                left_lane_points.append(point)
-            else:
-                right_lane_points.append(point)
-
-        # Schritt 4: Zuordnen der erkannten Kanten zur linken und rechten Fahrspurbegrenzung
-        #left_lane_points = np.argwhere(left_lane_edges == 255)
-        #right_lane_points = np.argwhere(right_lane_edges == 255)
-
-        
-        if len(left_lane_points) > 0 and len(right_lane_points) > 0:
-            new_middle = self.calculate_middle(left_lane_points[-1][0], right_lane_points[0][0])
-            self.middle_point = new_middle
-
-        print(self.middle_point)
-        # Farbe der linken Kantenpunkte rot machen
-        for point in left_lane_points:
-            if 0 < point[1] < self.middle_point:
-                self.debug_image[point[0], point[1]] = [255, 0, 0]  # BGR-Farbformat: Rot
-
-        # Farbe der rechten Kantenpunkte blau machen
-        for point in right_lane_points:
-            if self.middle_point < point[1]  < 96: 
-                self.debug_image[point[0], point[1], :] = [0, 0, 255]  # BGR-Farbformat: Blau
+            for point_set, color in zip(points, [(255, 0, 0), (0, 0, 255)]):
+                for point in point_set:
+                    cv2.circle(self.debug_image, point, radius=2, color=color, thickness=-1)
 
         return edges, self.debug_image
 
+    def collect_contour_points(self, contours):
+        points = []
+        for contour in contours:
+            if len(contour) > 1:
+                curve = cv2.approxPolyDP(contour, 0.001 * cv2.arcLength(contour, True), True)
+                curve = np.array([p[0] for p in curve], dtype=np.float32)
+                dist = np.linspace(0, 1, self.num_points)
+                uniform_points = np.array([self.interpolate_line(curve, t) for t in dist])
+                points.append([tuple(map(int, pt)) for pt in uniform_points])
+            else:
+                # Falls Kontur zu kurz ist, verwende den einzigen Punkt mehrmals
+                repeated_point = tuple(contour[0][0])
+                points.append([repeated_point for _ in range(self.num_points)])
+        return points
 
-"""
-    def detect_lines(self, image: np.ndarray) -> list:
-        lines = cv2.HoughLinesP(image, 1, np.pi / 180, threshold=50, minLineLength=100, maxLineGap=50)
-        print("Detected lines:", lines)
-        return lines if lines is not None else []
-
-    def classify_lines(self, lines: list, image_width: int) -> tuple:
-        left_lines = []
-        right_lines = []
-        print("Lines detected:", lines)
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            # Berechne die Steigung der Linie
-            slope = (y2 - y1) / (x2 - x1)
-            print("Slope:", slope)
-            # Basierend auf der Steigung klassifiziere die Linie als links oder rechts
-            if slope < 0 and x1 < image_width / 2 and x2 < image_width / 2:
-                left_lines.append(line)
-            elif slope > 0 and x1 > image_width / 2 and x2 > image_width / 2:
-                right_lines.append(line)
-        return left_lines, right_lines
-
-    def detect(self, image: np.ndarray) -> tuple:
-        #print("Detect method called")
-        preprocessed = self.preprocess_image(image)
-        lines = self.detect_lines(preprocessed)
-        #print("Lines detected:", lines)
-        if lines:
-            image_width = image.shape[1]
-            left_lines, right_lines = self.classify_lines(lines, image_width)
-            return left_lines, right_lines
-        else:
-            return [], []
-"""
-
-    
+    def interpolate_line(self, points, t):
+        """ Linear interpolation of points along a simplified contour. """
+        if t == 1:
+            return points[-1]
+        num = len(points) - 1
+        idx = int(num * t)
+        pt1, pt2 = points[idx], points[idx + 1]
+        alpha = num * t - idx
+        return (1 - alpha) * pt1 + alpha * pt2
