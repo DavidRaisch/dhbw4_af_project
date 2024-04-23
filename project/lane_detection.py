@@ -1,59 +1,56 @@
 import numpy as np
-import cv2
+from scipy.ndimage import gaussian_filter, sobel
+
 
 class LaneDetection:
-    def __init__(self, num_points=7):
-        self.canny_low_threshold = 30
-        self.canny_high_threshold = 90
-        self.gaussian_blur_kernel_size = (5, 5)
-        self.ignore_bottom_fraction = 0.32
-        self.num_points = num_points
+    def __init__(self, ignore_bottom_fraction=0.32, threshold_rel=0.5):
+        self.ignore_bottom_fraction = ignore_bottom_fraction
+        self.threshold_rel = threshold_rel
+        self.debug_image = None
 
-    def detect(self, image: np.ndarray) -> np.ndarray:
-        height = image.shape[0]
+    def detect(self, image: np.ndarray):
+        height, width, _ = image.shape
         ignore_height = int(height * self.ignore_bottom_fraction)
-        image = image[:height - ignore_height, :]
+        image_cropped = image[:height - ignore_height, :]
 
-        s_channel = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        blur = cv2.GaussianBlur(s_channel, self.gaussian_blur_kernel_size, 0)
-        edges = cv2.Canny(blur, self.canny_low_threshold, self.canny_high_threshold)
-        self.debug_image = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+        lane_mask = self.isolate_lane(image_cropped)
+        edges = self.detect_edges(lane_mask)
 
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if contours:
-            cv2.drawContours(self.debug_image, contours, -1, (0, 255, 0), 2)
-            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:2]  # Betrachte nur die zwei größten Konturen
-            contours = sorted(contours, key=lambda c: np.mean([p[0][0] for p in c]))  # Sortiere nach horizontaler Position
+        self.debug_image = self.create_debug_image(edges, image, width)
+        return edges
 
-            points = self.collect_contour_points(contours)
+    def isolate_lane(self, image: np.ndarray):
+        gray = self.rgb_to_gray(image)
+        lane_colors = gray[gray < np.percentile(gray, 85)]
+        thresh = np.mean(lane_colors) + np.std(lane_colors) * self.threshold_rel
+        return gray < thresh
 
-            for point_set, color in zip(points, [(255, 0, 0), (0, 0, 255)]):
-                for point in point_set:
-                    cv2.circle(self.debug_image, point, radius=2, color=color, thickness=-1)
+    def detect_edges(self, mask: np.ndarray):
+        edges = sobel(mask, axis=0) ** 2 + sobel(mask, axis=1) ** 2
+        edges = np.sqrt(edges)
+        edges /= edges.max()
+        return edges
 
-        return edges, self.debug_image
+    def rgb_to_gray(self, rgb):
+        return np.dot(rgb[..., :3], [0.2989, 0.5870, 0.1140])
 
-    def collect_contour_points(self, contours):
-        points = []
-        for contour in contours:
-            if len(contour) > 1:
-                curve = cv2.approxPolyDP(contour, 0.001 * cv2.arcLength(contour, True), True)
-                curve = np.array([p[0] for p in curve], dtype=np.float32)
-                dist = np.linspace(0, 1, self.num_points)
-                uniform_points = np.array([self.interpolate_line(curve, t) for t in dist])
-                points.append([tuple(map(int, pt)) for pt in uniform_points])
-            else:
-                # Falls Kontur zu kurz ist, verwende den einzigen Punkt mehrmals
-                repeated_point = tuple(contour[0][0])
-                points.append([repeated_point for _ in range(self.num_points)])
-        return points
+    def create_debug_image(self, edges, original_image, width):
+        debug_image = np.zeros((original_image.shape[0], width, 3), dtype=np.uint8)
 
-    def interpolate_line(self, points, t):
-        """ Linear interpolation of points along a simplified contour. """
-        if t == 1:
-            return points[-1]
-        num = len(points) - 1
-        idx = int(num * t)
-        pt1, pt2 = points[idx], points[idx + 1]
-        alpha = num * t - idx
-        return (1 - alpha) * pt1 + alpha * pt2
+        # Calculate the midpoint of the visible (non-ignored) part of the image
+        visible_width = width
+        center_of_lane = visible_width // 2
+        # Apply colors to the left and right edges
+        edge_left = edges[:, :center_of_lane] > 0
+        edge_right = edges[:, center_of_lane:] > 0
+
+        # Color the left and right edges
+        debug_image[:edges.shape[0], :center_of_lane][edge_left] = [255, 0, 0]
+        debug_image[:edges.shape[0], center_of_lane:][edge_right] = [0, 0, 255]
+
+        # Pad the bottom part of the image to restore the ignored sections
+        padding = np.zeros((0, width, 3), dtype=np.uint8)
+        complete_debug_image = np.vstack((debug_image, padding))
+        return complete_debug_image
+
+# This code replaces the LaneDetection class in your lane_detection.py file.
