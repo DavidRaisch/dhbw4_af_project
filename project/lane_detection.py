@@ -16,7 +16,7 @@ class LaneDetection:
         lane_mask = self.isolate_lane(image_cropped)
         edges = self.detect_edges(lane_mask)
 
-        self.debug_image = self.create_debug_image(edges, image, width)
+        self.debug_image = self.create_debug_image(edges, width)
         return edges
 
     def isolate_lane(self, image: np.ndarray):
@@ -34,23 +34,17 @@ class LaneDetection:
     def rgb_to_gray(self, rgb):
         return np.dot(rgb[..., :3], [0.2989, 0.5870, 0.1140])
 
-    def create_debug_image(self, edges, original_image, width):
-        debug_image = np.zeros((original_image.shape[0], width, 3), dtype=np.uint8)
+    def create_debug_image(self, edges, width):
+        debug_image = np.zeros((edges.shape[0], width, 3), dtype=np.uint8)
 
-        # Calculate the midpoint of the visible (non-ignored) part of the image
-        visible_width = width
-        center_of_lane = visible_width // 2
-        # Apply colors to the left and right edges
-        edge_left = edges[:, :center_of_lane] > 0
-        edge_right = edges[:, center_of_lane:] > 0
+        # Find and color the actual edge paths
+        for row in range(edges.shape[0]):
+            if np.any(edges[row] > 0):  # Check if there's any edge in the row
+                left_index = np.argmax(edges[row] > 0)
+                right_index = width - np.argmax(edges[row][::-1] > 0) - 1
 
-        # Color the left and right edges
-        debug_image[:edges.shape[0], :center_of_lane][edge_left] = [255, 0, 0]
-        debug_image[:edges.shape[0], center_of_lane:][edge_right] = [0, 0, 255]
+                # Mark the detected edges in the image
+                debug_image[row, left_index] = [255, 0, 0]  # Red for left edge
+                debug_image[row, right_index] = [0, 0, 255]  # Blue for right edge
 
-        # Pad the bottom part of the image to restore the ignored sections
-        padding = np.zeros((0, width, 3), dtype=np.uint8)
-        complete_debug_image = np.vstack((debug_image, padding))
-        return complete_debug_image
-
-# This code replaces the LaneDetection class in your lane_detection.py file.
+        return debug_image
