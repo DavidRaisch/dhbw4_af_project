@@ -44,7 +44,10 @@ class PathPlanning:
         angle_degrees = np.degrees(angle)  # Umwandlung in Grad
 
         # Runden des Winkels auf die nächste ganze Zahl
-        rounded_angle = round(angle_degrees)
+        try:
+            rounded_angle = round(angle_degrees)
+        except:
+            rounded_angle = 0
 
         return rounded_angle
 
