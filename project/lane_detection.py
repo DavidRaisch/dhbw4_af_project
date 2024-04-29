@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter, sobel
-
+from scipy.signal import find_peaks
 
 class LaneDetection:
     def __init__(self, ignore_bottom_fraction=0.32, threshold_rel=0.5):
@@ -39,9 +39,10 @@ class LaneDetection:
 
         # Find and color the actual edge paths
         for row in range(edges.shape[0]):
-            if np.any(edges[row] > 0):  # Check if there's any edge in the row
-                left_index = np.argmax(edges[row] > 0)
-                right_index = width - np.argmax(edges[row][::-1] > 0) - 1
+            row_peaks, _ = find_peaks(edges[row], height=0.3)
+            if len(row_peaks) >= 2:
+                left_index = row_peaks[0]  # first peak from the left
+                right_index = row_peaks[-1]  # last peak from the right
 
                 # Mark the detected edges in the image
                 debug_image[row, left_index] = [255, 0, 0]  # Red for left edge
