@@ -13,7 +13,7 @@ class LateralControl:
             # Stanley Regler Parameter
             self.k_p = kwargs.get('k_p', 0.1)
             self.k_i = kwargs.get('k_i', 0.01)
-            self.k_d = kwargs.get('k_d', 0.01)
+            self.k_d = kwargs.get('k_d', 0.8)
             self.integral_cte = 0.0  # Initialisierung des integralen Anteils des Reglers
 
 
@@ -29,9 +29,9 @@ class LateralControl:
 
         # Vehicle parameters
         L = 0.5  # Distance between front and rear axle (vehicle length)
-        k = 0.00000000000001  # Gain factor for steering angle calculation
-        k_p = 0.105  # Proportional gain for heading error
-        max_delta = np.pi / 6  # Maximum steering angle
+        k = 0.0000000001  # Gain factor for steering angle calculation
+        k_p = 0.15  # Proportional gain for heading error #0.105
+        max_delta = np.pi / 8  # Maximum steering angle
 
         # Current vehicle position
         car_x, car_y = self._car_position
@@ -49,15 +49,14 @@ class LateralControl:
         trajectory_yaw = np.arctan2(trajectory[-1][1] - trajectory[0][1], trajectory[-1][0] - trajectory[0][0])
         heading_error = trajectory_yaw - np.arctan2(car_y - closest_point[1], car_x - closest_point[0])
         heading_error = self.get_valid_angle(heading_error)
+        print(heading_error)
+
 
         # Calculate cross-track error (distance between vehicle and trajectory)
         e_r = min_dist
 
-        # Calculate delta error (additional steering angle correction based on cross-track error)
-        delta_error = np.arctan(k * e_r / (L * speed + 1.0e-6))
-
         # Calculate total steering angle with proportional gain for heading error
-        steering_angle = k_p * heading_error + delta_error
+        steering_angle = k_p * heading_error #* self.k_d
 
         # Limit the steering angle to avoid extreme values
         steering_angle = np.clip(steering_angle, -max_delta, max_delta)
