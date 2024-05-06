@@ -15,6 +15,7 @@ def run(env, input_controller: InputController):
     path_planning = PathPlanning()
 
     seed = int(np.random.randint(0, int(1e6)))
+    seed = 823827
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
 

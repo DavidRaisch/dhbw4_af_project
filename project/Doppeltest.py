@@ -17,6 +17,8 @@ def run(env, input_controller: InputController):
 
     # Seed für die Umgebung festlegen
     seed = int(np.random.randint(0, int(1e6)))
+    print(seed)
+    seed = 823827
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
 
