@@ -1,95 +1,76 @@
 import numpy as np
-from scipy.ndimage import gaussian_filter, sobel
-from scipy.signal import find_peaks
+from scipy.ndimage import sobel
 
 class LaneDetection:
-    def __init__(self, ignore_bottom_fraction=0.32, threshold_rel=0.5):
-        self.ignore_bottom_fraction = ignore_bottom_fraction
+    def __init__(self, threshold_rel=0.5):
+        # Initialisierung der LaneDetection-Klasse mit einem Schwellenwert für die Kanten.
         self.threshold_rel = threshold_rel
         self.debug_image = None
 
     def detect(self, image: np.ndarray):
+        # Hauptmethode zur Detektion von Fahrspurmarkierungen in einem Bild.
         height, width, _ = image.shape
-        ignore_height = int(height * self.ignore_bottom_fraction)
+        # Ignoriere den oberen Teil des Bildes, da Fahrbahnmarkierungen im unteren Teil zu finden sind.
+        ignore_height = int(height * 0.33)
         image_cropped = image[:height - ignore_height, :]
 
-        lane_mask = self.isolate_lane(image_cropped)
-        edges = self.detect_edges(lane_mask)
-
-        self.debug_image = self.create_debug_image(edges, width)
-        return edges
-
-    def isolate_lane(self, image: np.ndarray):
-        gray = self.rgb_to_gray(image)
-        lane_colors = gray[gray < np.percentile(gray, 85)]
-        thresh = np.mean(lane_colors) + np.std(lane_colors) * self.threshold_rel
-        return gray < thresh
-
-    def detect_edges(self, mask: np.ndarray):
-        vertical_edges = sobel(mask, axis=0) ** 2
-        horizontal_edges = sobel(mask, axis=1) ** 2
-        edges = np.sqrt(vertical_edges + horizontal_edges)
-        edges /= edges.max()
-        return edges
+        # Konvertiere das zugeschnittene Bild in Graustufen.
+        gray = self.rgb_to_gray(image_cropped)
+        # Erkenne Kanten im Bild mit einem Sobel-Filter.
+        edges = self.detect_edges(gray)
+        # Extrahiere die initialen Punkte der linken und rechten Fahrbahnmarkierungen.
+        initial_points = self.extract_lane_edges(edges)
+        # Erstelle ein Debug-Bild für die Visualisierung.
+        self.debug_image = self.create_debug_image(edges, initial_points)
+        # Verbreite die Farben der initialen Punkte auf benachbarte Kantenpunkte.
+        self.spread_colors(edges, initial_points)
+        return self.debug_image
 
     def rgb_to_gray(self, rgb):
+        # Wandelt ein RGB-Bild in ein Graustufenbild um.
         return np.dot(rgb[..., :3], [0.2989, 0.5870, 0.1140])
 
-    def create_debug_image(self, edges, width):
-        debug_image = np.zeros((edges.shape[0], width, 3), dtype=np.uint8)
-        prev_peaks = None
+    def detect_edges(self, gray: np.ndarray, threshold: int = 120):
+        # Nutze den Sobel-Operator zur Kantenfindung in x- und y-Richtung und kombiniere die Ergebnisse.
+        sobel_x = sobel(gray, axis=1)
+        sobel_y = sobel(gray, axis=0)
+        edges = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
+        # Binarisiere die Kanten anhand eines Schwellenwertes.
+        edges = (edges > threshold) * 1
+        return edges
 
-        # Find and color the actual edge paths
-        for row in reversed(range(edges.shape[0])):
-            row_peaks, _ = find_peaks(edges[row], height=0.3)
-            corrected_peaks = self.correct_peak_assignment(row_peaks, prev_peaks)
+    def extract_lane_edges(self, edges):
+        # Ermittelt die untersten Punkte der linken und rechten Fahrbahnmarkierungen.
+        height, width = edges.shape
+        bottom_indices = np.where(edges[height-1, :] == 1)[0]
+        if len(bottom_indices) > 0:
+            leftmost_index = bottom_indices[0]
+            rightmost_index = bottom_indices[-1]
+        else:
+            leftmost_index = rightmost_index = None
+        return [(height-1, leftmost_index, 'left'), (height-1, rightmost_index, 'right')]
 
-            if corrected_peaks.size >= 2:
-                # Assign edges based on proximity to previous peaks
-                left_index = corrected_peaks[0]  # first peak from the left
-                right_index = corrected_peaks[-1]  # last peak from the right
-
-                # Mark the detected edges in the image
-                debug_image[row, left_index] = [255, 0, 0]  # Red for left edge
-                debug_image[row, right_index] = [0, 0, 255]  # Blue for right edge
-
-                prev_peaks = corrected_peaks
-            else:
-                # Handle cases where peaks may be missed due to sharp curves
-                if prev_peaks is not None and corrected_peaks.size == 1:
-                    # Attempt to determine if the single peak is left or right based on previous data
-                    if corrected_peaks[0] - prev_peaks[0] < prev_peaks[-1] - corrected_peaks[0]:
-                        debug_image[row, corrected_peaks[0]] = [255, 0, 0]  # Assume left if closer to previous left
-                        prev_peaks = np.array([corrected_peaks[0], prev_peaks[-1]])
-                    else:
-                        debug_image[row, corrected_peaks[0]] = [0, 0, 255]  # Assume right if closer to previous right
-                        prev_peaks = np.array([prev_peaks[0], corrected_peaks[0]])
-                else:
-                    prev_peaks = None
-
+    def create_debug_image(self, edges, initial_points):
+        # Erstellt ein Debug-Bild, das die initialen Punkte einfärbt.
+        debug_image = np.zeros((edges.shape[0], edges.shape[1], 3), dtype=np.uint8)
+        for point in initial_points:
+            y, x, side = point
+            if x is not None:
+                color = [255, 0, 0] if side == 'left' else [0, 0, 255]
+                debug_image[y, x] = color
         return debug_image
 
-    def correct_peak_assignment(self, peaks, prev_peaks):
-        if prev_peaks is None or len(prev_peaks) < 2:
-            return np.array(peaks)
+    def spread_colors(self, edges, initial_points):
+        # Verwendet eine einfache Liste als Warteschlange, um die Farben entlang der Kanten zu verbreiten.
+        queue = [(point[1], point[0], point[2]) for point in initial_points if point[1] is not None]
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
-        # Determine left and right peaks from previous row
-        left_prev_peak = prev_peaks[0]
-        right_prev_peak = prev_peaks[-1]
-
-        corrected_peaks = []
-        for peak in peaks:
-            if abs(peak - left_prev_peak) < abs(peak - right_prev_peak):
-                corrected_peaks.append(peak)
-            else:
-                corrected_peaks.append(peak)
-
-        corrected_peaks = np.array(corrected_peaks)
-        if len(corrected_peaks) >= 2:
-            # Avoid single peak being misclassified
-            if np.all(corrected_peaks <= left_prev_peak + 10):
-                corrected_peaks = np.append(corrected_peaks, right_prev_peak)
-            elif np.all(corrected_peaks >= right_prev_peak - 10):
-                corrected_peaks = np.insert(corrected_peaks, 0, left_prev_peak)
-
-        return corrected_peaks
+        while queue:
+            x, y, side = queue.pop(0)
+            current_color = [255, 0, 0] if side == 'left' else [0, 0, 255]
+            for dx, dy in directions:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < edges.shape[1] and 0 <= ny < edges.shape[0]:
+                    if edges[ny, nx] == 1 and np.all(self.debug_image[ny, nx] == 0):
+                        self.debug_image[ny, nx] = current_color
+                        queue.append((nx, ny, side))
