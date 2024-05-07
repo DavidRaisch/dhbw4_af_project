@@ -42,13 +42,16 @@ class LaneDetection:
     def extract_lane_edges(self, edges):
         # Ermittelt die untersten Punkte der linken und rechten Fahrbahnmarkierungen.
         height, width = edges.shape
-        bottom_indices = np.where(edges[height-1, :] == 1)[0]
+        mid = width // 2  # Mittelpunkt der Breite des Bildes
+        bottom_indices = np.where(edges[height - 1, :] == 1)[0]
         if len(bottom_indices) > 0:
-            leftmost_index = bottom_indices[0]
-            rightmost_index = bottom_indices[-1]
+            # Linke Markierung: Punkt am weitesten rechts, aber links von der Mitte
+            leftmost_index = max((index for index in bottom_indices if index < mid), default=None)
+            # Rechte Markierung: Punkt am weitesten links, aber rechts von der Mitte
+            rightmost_index = min((index for index in bottom_indices if index > mid), default=None)
         else:
             leftmost_index = rightmost_index = None
-        return [(height-1, leftmost_index, 'left'), (height-1, rightmost_index, 'right')]
+        return [(height - 1, leftmost_index, 'left'), (height - 1, rightmost_index, 'right')]
 
     def create_debug_image(self, edges, initial_points):
         # Erstellt ein Debug-Bild, das die initialen Punkte einfärbt.
