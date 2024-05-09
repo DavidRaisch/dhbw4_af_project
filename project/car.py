@@ -29,10 +29,10 @@ class Car:
                 1: gas, 0 is no gas, 1 is full gas
                 2: breaking, 0 is no break, 1 is full break
         """
-        left_lane_boundaries, right_lane_boundaries = self._lane_detection.detect(observation)
+        debug_image, left_lane_boundaries, right_lane_boundaries = self._lane_detection.detect(observation)
         trajectory, curvature = self._path_planning.plan(left_lane_boundaries, right_lane_boundaries)
-        steering_angle = self._lateral_control.control(trajectory, info['speed'])
-        target_speed = self._longitudinal_control.predict_target_speed(curvature)
+        steering_angle = self._lateral_control.control(info ['trajectory'], info['speed'])
+        target_speed = self._longitudinal_control.predict_target_speed(info ['trajectory'], steering_angle) #wieder in curvature ändern anstatt info ['trajectory']
         acceleration, braking = self._longitudinal_control.control(info['speed'], target_speed, steering_angle)
 
         action = [steering_angle, acceleration, braking]

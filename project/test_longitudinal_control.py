@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import cv2
 
 import gymnasium as gym
 import numpy as np
@@ -9,6 +10,9 @@ from matplotlib import pyplot as plt
 from env_wrapper import CarRacingEnvWrapper
 from input_controller import InputController
 from longitudinal_control import LongitudinalControl
+from lane_detection import LaneDetection
+from path_planning import PathPlanning
+from lateral_control import LateralControl
 
 fig = plt.figure()
 plt.ion()
@@ -17,17 +21,26 @@ plt.show()
 
 def run(env, input_controller: InputController):
     longitudinal_control = LongitudinalControl()
+    _path_planning = PathPlanning()
+    _lateral_control = LateralControl()
+    _lane_detection = LaneDetection()
 
     seed = int(np.random.randint(0, int(1e6)))
     state_image, info = env.reset(seed=seed)
+
     total_reward = 0.0
 
     speed_history = []
     target_speed_history = []
 
     while not input_controller.quit:
-        target_speed = longitudinal_control.predict_target_speed(info['trajectory'], info['speed'], input_controller.steer)
-        acceleration, braking = longitudinal_control.control(info['speed'], target_speed, input_controller.steer)
+        #debug_image, left_lane_boundaries, right_lane_boundaries = _lane_detection.detect(state_image)
+        #trajectory, curvature = _path_planning.plan(info['left_lane_boundary'], info['right_lane_boundary'])
+        steering_angle = _lateral_control.control(info ['trajectory'], info['speed'])
+
+        curvature = info['trajectory']
+        target_speed = longitudinal_control.predict_target_speed(curvature)
+        acceleration, braking = longitudinal_control.control(info['speed'], target_speed, steering_angle)
 
         speed_history.append(info['speed'])
         target_speed_history.append(target_speed)
@@ -40,6 +53,16 @@ def run(env, input_controller: InputController):
             fig.canvas.flush_events()
         except:
             pass
+
+        cv_image = np.asarray(state_image, dtype=np.uint8)
+        for point in info['trajectory']:
+            if 0 < point[0] < 96 and 0 < point[1] < 84:
+                cv_image[int(point[1]), int(point[0])] = [255, 255, 255]
+
+        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
+        cv_image = cv2.resize(cv_image, (cv_image.shape[1] * 6, cv_image.shape[0] * 6))
+        cv2.imshow('Car Racing - Lateral Control', cv_image)
+        cv2.waitKey(1)
 
         # Step the environment
         input_controller.update()
@@ -57,8 +80,8 @@ def run(env, input_controller: InputController):
             state_image, info = env.reset(seed=seed)
             total_reward = 0.0
 
-            speed_history = []
-            target_speed_history = []
+            #speed_history = []
+            #target_speed_history = []
 
 
 def main():

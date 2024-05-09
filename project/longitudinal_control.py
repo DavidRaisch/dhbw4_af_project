@@ -1,35 +1,80 @@
+from __future__ import annotations
+
+import numpy as np
+import time
+
 class LongitudinalControl:
-    def __init__(self, kp=0.1, ki=0.01, kd=0.005):
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.previous_error = 0
-        self.integral = 0
+    def __init__(self):
+        self.kp = 0.1
+        self.ki = 0.000001
+        self.kd = 0.001
+        self.error_integral = 0
+        self.prev_error = 0
+        self.start_time = time.time()
 
-    def control(self, current_speed, target_speed, steer, dt=1):
-        # PID controller for longitudinal control
+    def control(self, current_speed: float, target_speed: float, steering_angle: float) -> tuple[float, float]:
+    # Hier wird die Regelung der Beschleunigung und des Bremsens durchgeführt
         error = target_speed - current_speed
-        self.integral += error * dt
-        derivative = (error - self.previous_error) / dt
-        pid_output = self.kp * error + self.ki * self.integral + self.kd * derivative
-        self.previous_error = error
-
-        # Convert PID output to acceleration and braking values
-        acceleration = max(pid_output, 0)
-        braking = max(-pid_output, 0)
-        return acceleration, braking
-
-    def predict_target_speed(self, trajectory, current_speed, steer):
-        # Simplistic target speed prediction based on the trajectory and current steering angle
-        # Assuming trajectory info contains curvature information; if not, adjust accordingly
-        curvature = abs(steer)  # This is a placeholder for actual curvature calculation
-
-        # Adjust speed based on curvature and current speed
-        if curvature > 0.1:
-            target_speed = max(30, 100 - curvature * 50)  # Reduce speed in sharper curves
+        self.error_integral += error
+        derivative = error - self.prev_error
+        self.prev_error = error
+        control_signal = self.kp * error  + self.kd * derivative #+ self.ki * self.error_integral
+        #print(control_signal)
+        # Berechnung von Beschleunigung und Bremsen basierend auf dem Steuersignal
+       
+        if control_signal > 0:
+            acceleration = min(control_signal, 1.0)  # Maximalwert auf 1.0 begrenzen
+            brake = 0.0
         else:
-            target_speed = 100  # Higher speed for straight paths or mild curves
+            acceleration = 0.0
+            brake = min(-control_signal, 1.0)  # Maximalwert auf 1.0 begrenzen
 
+        
+
+        return acceleration, brake
+
+    def predict_target_speed(self, curvature: float, steering_angle: float) -> float:
+        # Hier wird die Zielgeschwindigkeit anhand der Kurvenkrümmung bestimmt
+        # Ein einfaches Beispiel: niedrigere Geschwindigkeit bei hoher Kurvenkrümmung
+        # Hier können Sie eine ausgefeiltere Logik einfügen, z. B. mit weiteren Heuristiken
+        # In diesem Beispiel wird die Zielgeschwindigkeit direkt aus der Kurvenkrümmung abgeleitet
+        curv = self._calculate_curvature(curvature)
+        #print(steering_angle)
+        #target_speed = max(30.0, 20.0 - curv * 1.0)
+        #print(curv)
+       
+        timer = time.time() - self.start_time
+        #print(timer)
+        if timer < 1:
+            target_speed = 20.0
+        else:
+            #if curv > 30:
+                #target_speed = 20
+            if curv > 50: 
+                target_speed = 50.0 - curv*0.3
+            elif curv > 20:
+                target_speed = 50.0 - curv*0.4
+            elif curv < 20:
+                target_speed = 50 - curv*0.5
+            else:
+                target_speed = 25
+        #print(curv)
+        #print(target_speed)
         return target_speed
 
-# Ensure to include necessary imports in your project if they're not already defined
+
+    def _calculate_curvature(self, trajectory: list[tuple[float, float]]) -> float:
+        # Berechnung der Kurvenkrümmung basierend auf den Trajektoriepunkten
+        # Wir verwenden hier eine einfache Methode: numerische Berechnung der Krümmung
+        # durch Anpassung eines Kreises an die Trajektoriepunkte in der Umgebung eines Punktes
+        x = np.array([p[0] for p in trajectory])
+        y = np.array([p[1] for p in trajectory])
+        dx_dt = np.gradient(x)
+        dy_dt = np.gradient(y)
+        d2x_dt2 = np.gradient(dx_dt)
+        d2y_dt2 = np.gradient(dy_dt)
+        curvature = (dx_dt * d2y_dt2 - dy_dt * d2x_dt2) / ((dx_dt ** 2 + dy_dt ** 2) ** 1.5)
+
+        curvature = abs(curvature) * 1000
+        return np.mean(curvature)
+
