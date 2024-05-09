@@ -6,16 +6,16 @@ import math
 
 class LateralControl:
 
-    def __init__(self, controller_type="pure_pursuit", **kwargs): #choose between pure_pursuit and stanley | pure_pursuit better controller
+    def __init__(self, controller_type="stanley", **kwargs): #choose between pure_pursuit and stanley | pure_pursuit better controller
         self.controller_type = controller_type
         self._car_position = np.array([48, 64])
 
         if controller_type == "stanley":
             # Stanley Regler Parameter
-            self.k_p = kwargs.get('k_p', 0.1)
-            self.k_i = kwargs.get('k_i', 0.01)
-            self.k_d = kwargs.get('k_d', 0.8)
-            self.integral_cte = 0.0  # Initialisierung des integralen Anteils des Reglers
+            self.k = 0.25  # control gain
+            self.k_soft = 0.7  # softening factor
+            self.delta_max = np.pi / 8  # max steering angle
+            self.step = 0  # step counter
         elif controller_type == "pure_pursuit":
             # Pure Pursuit Regler Parameter
             self.lookahead_distance = kwargs.get('lookahead_distance', 3.0)
@@ -84,60 +84,36 @@ class LateralControl:
             if distance > self.lookahead_distance:
                 return i
         return -1
-    
 
-    
-    def stanley_control(self, trajectory, speed):
-        if not trajectory.size:
-            return 0.0  # Wenn die Trajektorie leer ist, gibt es keinen Lenkwinkel
+    def stanley_control (self, trajectory, speed):
+        # Check if the trajectory is empty - error handling
+        if len(trajectory) == 0:
+            print("Trajectory is empty")
+            return 0
+        
+        # Calculate the cross-track error
+        cross_track_error , lookahead_index = self.calculate_cte(trajectory)
 
-        # Vehicle parameters
-        L = 0.5  # Distance between front and rear axle (vehicle length)
-        k = 0.0000000001  # Gain factor for steering angle calculation
-        k_p = 0.105  # Proportional gain for heading error #0.105
-        max_delta = np.pi / 8  # Maximum steering angle
+        heading_angle = np.arctan2(trajectory[lookahead_index + 1, 1] - trajectory[lookahead_index, 1], trajectory[lookahead_index + 1, 0] - trajectory[lookahead_index, 0])    
+        current_heading_angle = np.arctan2(self._car_position[1] - trajectory[0, 1], self._car_position[0] - trajectory[0, 0])
+        heading_error = heading_angle - current_heading_angle
+        # Calculate the steering angle
+        steering_angle = np.arctan2(self.k * cross_track_error, speed + self.k_soft) + heading_error
 
-        # Current vehicle position
-        car_x, car_y = self._car_position
+        # Limit the steering angle
+        steering_angle = np.clip(steering_angle, -self.delta_max, self.delta_max)
 
-        # Find the closest point on the trajectory to the vehicle
-        min_dist = float('inf')
-        closest_point = None
-        for point in trajectory:
-            dist = np.linalg.norm(np.array(point) - self._car_position)
-            if dist < min_dist:
-                min_dist = dist
-                closest_point = point
-
-        # Calculate heading error (angle difference between trajectory and vehicle heading)
-        trajectory_yaw = np.arctan2(trajectory[-1][1] - trajectory[0][1], trajectory[-1][0] - trajectory[0][0])
-        heading_error = trajectory_yaw - np.arctan2(car_y - closest_point[1], car_x - closest_point[0])
-        heading_error = self.get_valid_angle(heading_error)
-        print(heading_error)
-
-
-        # Calculate cross-track error (distance between vehicle and trajectory)
-        e_r = min_dist
-
-        # Calculate total steering angle with proportional gain for heading error
-        steering_angle = k_p * heading_error 
-
-        # Limit the steering angle to avoid extreme values
-        steering_angle = np.clip(steering_angle, -max_delta, max_delta)
-
+        self.step += 1 
         return steering_angle
-
-    def get_valid_angle(self, angle):
     
-        # Adjusts the angle to be within the range of -pi to pi.
-        
-        while angle < -np.pi:
-            angle += 2 * np.pi
-        while angle > np.pi:
-            angle -= 2 * np.pi
-        return angle
+    def calculate_cte(self, trajectory):
+        # Calculate the distance to the trajectory
+        distance = np.linalg.norm(trajectory - self._car_position, axis=1)
 
-        
+        # index of the lookahead point
+        lookahead_index = np.argmin(np.abs(distance))
 
+        # Calculate the cross-track error
+        cross_track_error = distance[lookahead_index]
 
-
+        return cross_track_error, lookahead_index
