@@ -6,7 +6,7 @@ import math
 
 class LateralControl:
 
-    def __init__(self, controller_type="stanley", **kwargs): #choose between pure_pursuit and stanley | pure_pursuit better controller
+    def __init__(self, controller_type="pure_pursuit", **kwargs): #choose between pure_pursuit and stanley | pure_pursuit better controller
         self.controller_type = controller_type
         self._car_position = np.array([48, 64])
 
