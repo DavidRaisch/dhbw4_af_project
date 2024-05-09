@@ -26,7 +26,7 @@ class PathPlanning:
         # Auswahl jedes 10. Punktes der Mittellinie für die Ausgabe
         sampled_midpoints = midpoints[::10]
 
-        return sampled_midpoints.tolist(), curvature
+        return sampled_midpoints, curvature
 
     def calculate_midpoints(self, left_lane_points, right_lane_points):
         """
@@ -61,22 +61,25 @@ class PathPlanning:
         :param points: Array der Mittelpunkte
         :return: Durchschnittliche Krümmung
         """
-        if points.size == 0:
-            # Wenn keine Punkte vorhanden sind, ist die Krümmung 0
+        try:
+            if points.size == 0:
+                # Wenn keine Punkte vorhanden sind, ist die Krümmung 0
+                return 0
+
+            # Berechnung der ersten und zweiten Ableitungen
+            dx_dt = np.gradient(points[:, 0])
+            dy_dt = np.gradient(points[:, 1])
+            d2x_dt2 = np.gradient(dx_dt)
+            d2y_dt2 = np.gradient(dy_dt)
+
+            # Sicherstellen, dass der Nenner nicht zu klein wird
+            denominator = (dx_dt ** 2 + dy_dt ** 2) ** 1.5
+            safe_denominator = np.where(denominator < 1e-6, 1e-6, denominator)
+
+            # Berechnung der Krümmung
+            curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / safe_denominator
+            curvature = curvature * 1000
+
+            return curvature.mean()
+        except:
             return 0
-
-        # Berechnung der ersten und zweiten Ableitungen
-        dx_dt = np.gradient(points[:, 0])
-        dy_dt = np.gradient(points[:, 1])
-        d2x_dt2 = np.gradient(dx_dt)
-        d2y_dt2 = np.gradient(dy_dt)
-
-        # Sicherstellen, dass der Nenner nicht zu klein wird
-        denominator = (dx_dt ** 2 + dy_dt ** 2) ** 1.5
-        safe_denominator = np.where(denominator < 1e-6, 1e-6, denominator)
-
-        # Berechnung der Krümmung
-        curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / safe_denominator
-        curvature = curvature * 1000
-
-        return curvature.mean()
