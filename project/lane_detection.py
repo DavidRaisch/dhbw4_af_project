@@ -12,7 +12,7 @@ class LaneDetection:
         # Hauptmethode zur Erkennung von Fahrspuren im gegebenen Bild.
         height, width, _ = image.shape
         # Ignoriert den oberen Teil des Bildes, um nur relevante Bereiche zu analysieren.
-        ignore_height = int(height * 0.33)
+        ignore_height = int(height * 0.31)
         image_cropped = image[:height - ignore_height, :]
         # Umwandlung des Bildes in Graustufen.
         gray = self.rgb_to_gray(image_cropped)
@@ -58,10 +58,13 @@ class LaneDetection:
         rightmost_index = min((index for index in bottom_indices if index > mid), default=None)
         return [(height - 1, leftmost_index, 'left'), (height - 1, rightmost_index, 'right')]
 
-    def get_edge_coordinates(self, edge_array, initial_points):
+    def get_edge_coordinates(self, edge_array, initial_points, min_distance=2):
         # Erzeugt Listen von Koordinaten für linke und rechte Kanten.
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         left_edges, right_edges = [], []
+        left_y_coords = {}
+        right_y_coords = {}
+
         queue = [(point[1], point[0], point[2]) for point in initial_points if point[1] is not None]
         while queue:
             x, y, side = queue.pop(0)
@@ -70,9 +73,21 @@ class LaneDetection:
                 if 0 <= nx < edge_array.shape[1] and 0 <= ny < edge_array.shape[0] and edge_array[ny, nx] == 1:
                     edge_array[ny, nx] = 0  # Markiert als besucht
                     if side == 'left':
-                        left_edges.append((nx, ny))
+                        # Überprüfen, ob ein Punkt auf der gleichen Höhe innerhalb des Mindestabstands ist
+                        if not any(nx - min_distance <= existing_x <= nx + min_distance for existing_x in
+                                   left_y_coords.get(ny, [])):
+                            if ny not in left_y_coords:
+                                left_y_coords[ny] = []
+                            left_y_coords[ny].append(nx)
+                            left_edges.append((nx, ny))
                     else:
-                        right_edges.append((nx, ny))
+                        # Überprüfen, ob ein Punkt auf der gleichen Höhe innerhalb des Mindestabstands ist
+                        if not any(nx - min_distance <= existing_x <= nx + min_distance for existing_x in
+                                   right_y_coords.get(ny, [])):
+                            if ny not in right_y_coords:
+                                right_y_coords[ny] = []
+                            right_y_coords[ny].append(nx)
+                            right_edges.append((nx, ny))
                     queue.append((nx, ny, side))
         return left_edges, right_edges
 
