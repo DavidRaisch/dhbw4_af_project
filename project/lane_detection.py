@@ -35,7 +35,7 @@ class LaneDetection:
         # Konvertierung eines RGB-Bildes in ein Graustufenbild.
         return np.dot(rgb[..., :3], [0.2989, 0.5870, 0.1140])
 
-    def detect_edges(self, gray: np.ndarray, threshold: int = 120):
+    def detect_edges(self, gray: np.ndarray, threshold: int = 63):
         # Anwendung des Sobel-Operators in x- und y-Richtung und Kombination der Ergebnisse.
         sobel_x = sobel(gray, axis=1)
         sobel_y = sobel(gray, axis=0)
