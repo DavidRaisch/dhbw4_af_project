@@ -85,7 +85,7 @@ class LateralControl:
                 return i
         return -1
 
-    def stanley_control (self, trajectory, speed):
+    def stanley_control (self, trajectory, speed): #Works only with info['trajectory'] => Replace 'trajectory' with info['trajectory'] in car.py.
         # Check if the trajectory is empty - error handling
         if len(trajectory) == 0:
             print("Trajectory is empty")
