@@ -14,9 +14,9 @@ Here is the project folder description by:
 
 This project folder contains various modules and functionalities aimed at achieving autonomous driving.
 
-## Lateral Control Algorithm
+## Lateral Control
 
-This file contains a lateral control algorithm for determining vehicle steering angles using either pure pursuit or Stanley methods.
+This file contains a lateral control for determining vehicle steering angles using either pure pursuit or Stanley methods.
 
 ### Description
 
