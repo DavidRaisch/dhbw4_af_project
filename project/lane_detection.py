@@ -2,7 +2,7 @@ import numpy as np
 from scipy.ndimage import sobel
 
 class LaneDetection:
-    def __init__(self, threshold_rel=0.5):
+    def __init__(self, threshold_rel=1):
         # Initialisierung der Klasse mit einem optionalen relativen Schwellenwert (nicht verwendet).
         self.threshold_rel = threshold_rel
         # Debug-Bild für die Visualisierung der Erkennungsergebnisse.

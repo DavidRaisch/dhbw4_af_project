@@ -33,12 +33,12 @@ class LongitudinalControl:
 
         return acceleration, brake
 
-    def predict_target_speed(self, curvature: float, steering_angle: float) -> float:
+    def predict_target_speed(self, curvature, steeringangle):
         # Hier wird die Zielgeschwindigkeit anhand der Kurvenkrümmung bestimmt
         # Ein einfaches Beispiel: niedrigere Geschwindigkeit bei hoher Kurvenkrümmung
         # Hier können Sie eine ausgefeiltere Logik einfügen, z. B. mit weiteren Heuristiken
         # In diesem Beispiel wird die Zielgeschwindigkeit direkt aus der Kurvenkrümmung abgeleitet
-        curv = self._calculate_curvature(curvature)
+        curv = curvature
         #print(steering_angle)
         #target_speed = max(30.0, 20.0 - curv * 1.0)
         #print(curv)
@@ -58,6 +58,10 @@ class LongitudinalControl:
                 target_speed = 50 - curv*0.5
             else:
                 target_speed = 25
+
+        if abs(steeringangle) > 0.8:
+            target_speed = 10
+            print("Regelung Failed")
         #print(curv)
         #print(target_speed)
         return target_speed

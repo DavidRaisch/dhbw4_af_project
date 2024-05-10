@@ -37,7 +37,8 @@ def run(env, input_controller: InputController):
             if 0 < point[0] < cv_image.shape[1] and 0 < point[1] < cv_image.shape[0]:
                 cv_image[int(point[1]), int(point[0])] = [255, 255, 255]
 
-        cv2.putText(cv_image, f"Krümmung: {curvature:.2f}", (30, 93), cv2.FONT_ITALIC, 0.4, (255, 255, 255), 1)
+        cv2.putText(cv_image, f"Krümmung: {curvature:.2f}", (15, 63), cv2.FONT_ITALIC, 0.3, (255, 255, 255), 1)
+
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
         cv_image = cv2.resize(cv_image, (cv_image.shape[1] * 6, cv_image.shape[0] * 6))
         cv2.imshow('Car Racing - Kombinierter Test', cv_image)

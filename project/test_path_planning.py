@@ -22,6 +22,9 @@ def run(env, input_controller: InputController):
     while not input_controller.quit:
         way_points, curvature = path_planning.plan(info['left_lane_boundary'], info['right_lane_boundary'])
 
+        print("tatsächliche Punkte Links: ", info['left_lane_boundary'])
+        print("tatsächliche Punkte Rechts: ", info['right_lane_boundary'])
+
         cv_image = np.asarray(state_image, dtype=np.uint8)
         way_points = np.array(way_points, dtype=np.int32)
         for point in way_points:
@@ -54,6 +57,7 @@ def run(env, input_controller: InputController):
 
             input_controller.skip = False
             seed = int(np.random.randint(0, int(1e6)))
+            print(seed)
             state_image, info = env.reset(seed=seed)
             total_reward = 0.0
 def main():
