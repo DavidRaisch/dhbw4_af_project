@@ -34,8 +34,7 @@ class PathPlanning:
         #Filtern von Fehlerhaften Berechnungen
         if curvature > 25:
             curvature = 25
-            print("Mist")
-        print(curvature)
+            
 
         # Auswahl jedes 10. Punktes der Mittellinie für die Ausgabe
         sampled_midpoints = midpoints[::10]
