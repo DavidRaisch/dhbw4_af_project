@@ -110,7 +110,7 @@ class PathPlanning:
 
             # Berechnung der Krümmung
             curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / safe_denominator
-            curvature = curvature * 5# Skalierung der Krümmung für bessere Lesbarkeit
+            curvature = curvature * 10# Skalierung der Krümmung für bessere Lesbarkeit
 
             return curvature.mean()
         except Exception as e:
