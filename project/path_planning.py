@@ -1,8 +1,5 @@
 import numpy as np
 
-
-from env_wrapper import CarRacingEnvWrapper
-
 class PathPlanning:
     def __init__(self):
         # Konstruktor der Klasse PathPlanning ohne spezifische Attribute.
@@ -20,25 +17,19 @@ class PathPlanning:
         left_lane_points = np.array(left_lane_points)
         right_lane_points = np.array(right_lane_points)
 
-        #print("Unsere Grenze: ", left_lane_points)
-
         # Berechnung der Mittelpunkte zwischen den linken und rechten Punkten
         midpoints = self.calculate_midpoints(left_lane_points, right_lane_points)
 
         # Berechnung der Krümmung basierend auf diesen Mittelpunkten
-
-
         curvature = self.calculate_curvature(midpoints)
 
 
         #Filtern von Fehlerhaften Berechnungen
         if curvature > 25:
             curvature = 25
-            
 
         # Auswahl jedes 10. Punktes der Mittellinie für die Ausgabe
         sampled_midpoints = midpoints[::10]
-        #sampled_midpoints = midpoints
 
         return sampled_midpoints, curvature
 
