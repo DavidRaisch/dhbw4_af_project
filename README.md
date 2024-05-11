@@ -14,6 +14,27 @@ Here is the project folder description by:
 
 This project folder contains various modules and functionalities aimed at achieving autonomous driving.
 
+## Lane_Detection
+
+This file is using the input Image and analyzes it for the borders of the path.
+
+### Description
+
+- **Purpose:** Detects Borders of the Path based on the Input
+- **Implementation:** Implemented in Python with image processing using `numpy` and `scipy`.
+- **Operation:** detect: Generates a Gray-Scaling-Image, recognizes Borders and checks if left or right in detect method.
+	
+
+## PathPlanning
+
+This file generates a Path based on the Borders of the detected Borders.
+
+### Description
+
+- **Purpose:** Plans a Path for the vehicle to follow. 
+- **Implementation:** Implemented in Python using `numpy`. 
+- **Operation:** plan: Uses the Edges of the path to calculate the Points in the Middle of the Road. These are used to calculate the curvature.
+
 ## Lateral Control
 
 This file contains a lateral control for determining vehicle steering angles using either pure pursuit or Stanley methods.
@@ -42,7 +63,7 @@ This file implements a longitudinal control for vehicle speed regulation based o
 
 
 ## Extensions
-- **Randomization feature in lane detection:** This feature introduces randomization in the lane detection process to enhance robustness against varying environmental conditions and improve generalization. !!!!Anpassen!!!!
+- **Randomization feature in lane detection:** The Detection of Borders isn't based on fixed colours. It is based on differences in color. Therefore our Implementation is robust against random colours for the road and environment as long as the difference of them is high enough.
 - **Implementation and functionality of both controllers:** 
 Details regarding their implementation and functionality are provided in the code documentation and the "Lateral Control" chapter.
 
@@ -51,6 +72,17 @@ Details regarding their implementation and functionality are provided in the cod
   - *Doppeltest.py:* This script tests the integration of Path Planning and Lane Detection functionalities.
   - *Trippletest.py:* Tests the combined functionality of Path Planning, Lane Detection, and Lateral Control modules.
 - **High average score:** Aiming for a high average score across all testing scenarios to ensure robust performance.
+
+## Improvements:
+
+Sometimes our control doesn't work together with our path. 
+The Reason for this might be the controllers are trained on Ideal Data which is calculated with functions and our Path isn't calculated with functions.
+This leads to weird driving sometimes.
+If this happens just restart the Driving. 
+Usually this behavior remains for every run when you don't restart.
+But there is no special Pattern which leads to this behavior. 
+It just happens sometimes.
+  
 
 
 
