@@ -32,18 +32,6 @@ class Car:
         """
         debug_image, left_lane_boundaries, right_lane_boundaries = self._lane_detection.detect(observation)
         trajectory, curvature = self._path_planning.plan(left_lane_boundaries, right_lane_boundaries)
-        cv_image = np.asarray(debug_image, dtype=np.uint8)
-        sampled_midpoints = np.array(trajectory, dtype=np.int32)
-        for point in sampled_midpoints:
-            if 0 < point[0] < cv_image.shape[1] and 0 < point[1] < cv_image.shape[0]:
-                cv_image[int(point[1]), int(point[0])] = [255, 255, 255]
-
-        cv2.putText(cv_image, f"Krümmung: {curvature:.2f}", (15, 63), cv2.FONT_ITALIC, 0.3, (255, 255, 255), 1)
-        cv_image = np.asarray(debug_image, dtype=np.uint8)
-        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
-        cv2.imshow('Car Racing - Lane Detection', cv_image)
-        cv2.waitKey(1)
-
         steering_angle = self._lateral_control.control(trajectory, info['speed'])
         target_speed = self._longitudinal_control.predict_target_speed(curvature, steering_angle) #wieder in curvature ändern anstatt info ['trajectory']
         acceleration, braking = self._longitudinal_control.control(info['speed'], target_speed, steering_angle)
