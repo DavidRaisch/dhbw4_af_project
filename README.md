@@ -17,7 +17,7 @@ Here is the project folder description by:
 
 This project folder contains various modules and functionalities aimed at achieving autonomous driving.
 
-## Lane_Detection
+## Lane Detection
 
 This file is using the input Image and analyzes it for the borders of the path.
 
@@ -28,7 +28,7 @@ This file is using the input Image and analyzes it for the borders of the path.
 - **Operation:** detect: Generates a Gray-Scaling-Image, recognizes Borders and checks if left or right in detect method.
 	
 
-## PathPlanning
+## Path Planning
 
 This file generates a Path based on the Borders of the detected Borders.
 
