@@ -1,6 +1,6 @@
 # Autonomous Driving Project
 Here is the project folder description by:
-- David Raisch (Matrikelnummer)
+- David Raisch (3768392)
 - Mattes Wirths (1788761)
 
 ## Table of Contents
