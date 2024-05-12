@@ -78,13 +78,7 @@ Details regarding their implementation and functionality are provided in the cod
 
 ## Improvements:
 
-Sometimes our control doesn't work together with our path. 
-The Reason for this might be the controllers are trained on Ideal Data which is calculated with functions and our Path isn't calculated with functions.
-This leads to weird driving sometimes.
-If this happens just restart the Driving. 
-Usually this behavior remains for every run when you don't restart.
-But there is no special Pattern which leads to this behavior. 
-It just happens sometimes.
+If an issue occurs or the average scores are unusually low, please restart Main.py to get a better impression of the project's real performance.
   
 
 
