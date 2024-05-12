@@ -7,7 +7,7 @@ Here is the project folder description by:
 - [Introduction](#introduction)
 - [Lane Detection](#lane_detection)
 - [Path Planning](#pathplanning)
-- [Lateral Control](#lateral-control-algorithm)
+- [Lateral Control](#lateral-control)
 - [Longitudinal Control](#longitudinal-control)
 - [Extensions](#extensions)
 - [Potential Bonus Points](#potential-bonus-points)
