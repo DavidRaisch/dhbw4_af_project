@@ -16,6 +16,7 @@ Here is the project folder description by:
 ## Introduction
 
 This project folder contains various modules and functionalities aimed at achieving autonomous driving.
+The folder structure, installation instructions, and execution guidelines are located in project/README.
 
 ## Lane Detection
 
