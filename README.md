@@ -1,14 +1,17 @@
 # Autonomous Driving Project
 Here is the project folder description by:
 - David Raisch (Matrikelnummer)
-- Mattes Wirths (Matrikelnummer)
+- Mattes Wirths (1788761)
 
 ## Table of Contents
 - [Introduction](#introduction)
+- [Lane_Detection](#lane_detection)
+- [PathPlanning](#pathplanning)
 - [Lateral Control Algorithm](#lateral-control-algorithm)
 - [Longitudinal Control](#longitudinal-control)
 - [Extensions](#extensions)
 - [Potential Bonus Points](#potential-bonus-points)
+- [Improvments](#improvements)
 
 ## Introduction
 
