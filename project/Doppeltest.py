@@ -10,7 +10,6 @@ from input_controller import InputController
 from lane_detection import LaneDetection
 from path_planning import PathPlanning
 
-
 def run(env, input_controller: InputController):
     lane_detection = LaneDetection()
     path_planning = PathPlanning()
@@ -20,43 +19,42 @@ def run(env, input_controller: InputController):
     total_reward = 0.0
 
     while not input_controller.quit:
-        # Detektion der Fahrspuren
+        # Detection of lanes
         debug_image, left_edges, right_edges = lane_detection.detect(state_image)
 
-        # Pfadplanung basierend auf den detektierten Fahrspuren
+        # Path planning based on the detected lanes
         sampled_midpoints, curvature = path_planning.plan(left_edges, right_edges)
 
         if np.isnan(sampled_midpoints).any():
-            print("Warnung: NaN-Werte in Wegpunkten erkannt. Überspringe diese Iteration.")
+            print("Warning: NaN values detected in waypoints. Skipping this iteration.")
             continue
 
-        # Visualisierung vorbereiten
+        # Prepare visualization
         cv_image = np.asarray(debug_image, dtype=np.uint8)
         sampled_midpoints = np.array(sampled_midpoints, dtype=np.int32)
         for point in sampled_midpoints:
             if 0 < point[0] < cv_image.shape[1] and 0 < point[1] < cv_image.shape[0]:
                 cv_image[int(point[1]), int(point[0])] = [255, 255, 255]
 
-        cv2.putText(cv_image, f"Krümmung: {curvature:.2f}", (15, 63), cv2.FONT_ITALIC, 0.3, (255, 255, 255), 1)
+        cv2.putText(cv_image, f"Curvature: {curvature:.2f}", (15, 63), cv2.FONT_ITALIC, 0.3, (255, 255, 255), 1)
 
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
         cv_image = cv2.resize(cv_image, (cv_image.shape[1] * 6, cv_image.shape[0] * 6))
-        cv2.imshow('Car Racing - Kombinierter Test', cv_image)
+        cv2.imshow('Car Racing - Combined Test', cv_image)
         cv2.waitKey(1)
 
-        # Aktualisierung der Eingaben und Simulationsschritte
+        # Update inputs and simulation steps
         input_controller.update()
         a = [input_controller.steer, input_controller.accelerate, input_controller.brake]
         state_image, r, done, trunc, info = env.step(a)
         total_reward += r
 
         if done or input_controller.skip:
-            print(f"Seed: {seed:06d}     Gesamtpunktzahl: {total_reward:06.2F}")
+            print(f"Seed: {seed:06d}     Total Score: {total_reward:06.2F}")
             input_controller.skip = False
             seed = int(np.random.randint(0, int(1e6)))
             state_image, info = env.reset(seed=seed)
             total_reward = 0.0
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -69,7 +67,6 @@ def main():
 
     run(env, input_controller)
     env.reset()
-
 
 if __name__ == '__main__':
     main()
