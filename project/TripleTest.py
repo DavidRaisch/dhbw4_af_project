@@ -14,6 +14,7 @@ from path_planning import PathPlanning
 
 
 def run(env, input_controller: InputController):
+    # Initialize controllers
     lateral_control = LateralControl()
     _path_planning = PathPlanning()
     _lane_detection = LaneDetection()
@@ -23,10 +24,12 @@ def run(env, input_controller: InputController):
     total_reward = 0.0
 
     while not input_controller.quit:
+        #Lane Detection, Path Planning and Lateral Control
         debug_image, left_lane_boundaries, right_lane_boundaries = _lane_detection.detect(state_image)
         trajectory, curvature = _path_planning.plan(left_lane_boundaries, right_lane_boundaries)
         steering_angle = lateral_control.control(trajectory, info['speed'])
 
+        # Visualization in debug image
         cv_image = np.asarray(state_image, dtype=np.uint8)
         for point in trajectory:
             if 0 < point[0] < 96 and 0 < point[1] < 84:
