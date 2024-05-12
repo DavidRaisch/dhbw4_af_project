@@ -1,13 +1,13 @@
 # Autonomous Driving Project
 Here is the project folder description by:
-- David Raisch (Matrikelnummer)
+- David Raisch (3768392)
 - Mattes Wirths (1788761)
 
 ## Table of Contents
 - [Introduction](#introduction)
-- [Lane_Detection](#lane_detection)
-- [PathPlanning](#pathplanning)
-- [Lateral Control Algorithm](#lateral-control-algorithm)
+- [Lane Detection](#lane_detection)
+- [Path Planning](#pathplanning)
+- [Lateral Control](#lateral-control-algorithm)
 - [Longitudinal Control](#longitudinal-control)
 - [Extensions](#extensions)
 - [Potential Bonus Points](#potential-bonus-points)
@@ -17,7 +17,7 @@ Here is the project folder description by:
 
 This project folder contains various modules and functionalities aimed at achieving autonomous driving.
 
-## Lane_Detection
+## Lane Detection
 
 This file is using the input Image and analyzes it for the borders of the path.
 
@@ -28,7 +28,7 @@ This file is using the input Image and analyzes it for the borders of the path.
 - **Operation:** detect: Generates a Gray-Scaling-Image, recognizes Borders and checks if left or right in detect method.
 	
 
-## PathPlanning
+## Path Planning
 
 This file generates a Path based on the Borders of the detected Borders.
 
