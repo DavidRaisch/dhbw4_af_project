@@ -5,8 +5,8 @@ Here is the project folder description by:
 
 ## Table of Contents
 - [Introduction](#introduction)
-- [Lane Detection](#lane_detection)
-- [Path Planning](#pathplanning)
+- [Lane Detection](#lane-detection)
+- [Path Planning](#path-planning)
 - [Lateral Control](#lateral-control)
 - [Longitudinal Control](#longitudinal-control)
 - [Extensions](#extensions)
